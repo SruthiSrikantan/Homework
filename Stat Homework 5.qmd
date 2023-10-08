@@ -1,0 +1,154 @@
+---
+title: "Stat Homework 5"
+author: "Sruthi Srikantan"
+date: "2023-10-04"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+1a.From this scatter plot we see a linear relationship between the house price and area of the living room. Most of the points are concentrated between $0-4e^6 and 0-5,000 ft. However, most of the outlier points also follow a linear upward trend. 
+```{r}
+library(ggplot2)
+HS<-read.csv("kc_house_data.csv")
+ggplot(HS, aes(x=sqft_living, y=price)) +
+geom_point() +
+geom_smooth(method=lm)
+```
+1b. From our log price vs  area of living room scatter plot, we see there is an upward trend in data points between these two variables.These points are less clustered in one area of the graph and are more spread out. Since the points are more spread out we can see the relationship between the variables more clearly and see that the variables do have a linear relationship. 
+```{r}
+log_price<-log(HS$price)
+
+ggplot(HS, aes(x=sqft_living, y=log_price)) +
+geom_point() +
+geom_smooth(method=lm)
+```
+1c.From our correlation coefficient  for the log house price and log living room area, we are given a value of 0.69. Correlations values range from -1 to 1. Our value is closer to 1, suggesting the log transformation of the variables have a positive coorelation and are moderately correlated. 
+```{r}
+log_price<-log(HS$price)
+log_sqft<-log(HS$sqft_living)
+cor(log_price,HS$sqft_living)
+
+```
+1d. The intercept is the log price estimate when the area of the living room is 0 sqft. This value of 1.22e1 is not relevant to the house price data because a house would not have a living room with an area of 0. The slope is the change in log price in relation to living room area. From this model, the log price increases by 3.987e-4 as the area of living room increases. The model of log price and living room area states that as the area of the room increases, the log price does as well. The same could be said about the model of price and living room area. As we can see in SLR_2, the slope shows that the price increases by 280.6 as the area of living room increases.  
+```{r}
+SLR <- lm(log_price ~ sqft_living, data=HS)
+summary(SLR)
+SLR_2<-lm(price ~ sqft_living, data=HS)
+summary(SLR_2)
+```
+1e. To observe constant variance in the model we should see a uniform distrubution of point in the scatter plot of the residuals. The x axis of the scatter plot shows the values from the fitted SLR model and the y axis shows the residual values from the SLR model. As we can see the points form a cluster on the top left of the scatter plot and a few outlier points spread downward. I have added a horizontal line to observe the symmetry of points. If there was a uniform distribution the points would be symmetrical around 0 on the y axis. However, as we can see this is not the case the assumption of constant variance is not met.
+
+To check normality I used a QQ plot to see if the points of the residuals follow along the 45 degree line. From the plot, the points follow the line very closely with a few outliers at the ends. From the QQ plot we see that the residuals follow the assumption of normality. 
+```{r}
+# Creating scatter plot to see if constant variance is met
+res <- residuals(SLR)
+plot(fitted(SLR), res,
+     )
+abline(h = 0, col = "red")
+
+# checking if residuals meet normality
+qqnorm(res)
+qqline(res)
+
+```
+1f. From part 1c we created a scatter plot looking at log house price and living room area. From this scatter plot we see a few outlier points. From the residual plot from part 1e. we can see these outliers more closely where the outliers have a larger residual than the cluster of points. These outliers can affect the acurracy of the regression line in relation to the other points. Also these outliers can affect the intercept of the regression line, making it difficult to see the true relationship of the variables. After refitting the SLR model we see the regression line fits the points more closely. This refitting of the model also changed the intercept and the slope of the regression line, hopefully creating a more acurrate model.
+
+```{r}
+ggplot(HS, aes(x=sqft_living, y=log_price)) +
+geom_point() +
+geom_smooth(method=lm)
+#Filtering outliers
+outliers <- which(HS$sqft_living > 7000)
+new_data <- HS[-outliers, ]
+new_log<-log(new_data$price)
+#Creating a scatter plot to observe the regression line
+ggplot(new_data, aes(x =sqft_living , y = new_log)) +
+  geom_point()+
+geom_smooth(method=lm)
+#modeling data
+SLR_new <- lm(new_log ~ sqft_living, data=new_data)
+summary(SLR_new)
+```
+1g.The null hypothesis states the true slope is equal to 0. The alternative hypothesis states that the true slop is not equal to 0. In the model summary that p value is less than 0.05, therefore we reject the null hypothesis. For the intercept, the null hypothesis states that the intercept is equal to 0. The alternative hypothesis states the intercept is not equal to 0. From the model summary we see the p value is less than 0.05. This means we can reject the null hypothesis. Additionally, the 95% confidence interval states the true slope is between  0.0004 and 4.11e-4. The confidence interval also states the intercept is between 12.19 and 1.27e1. This 95% interval also shows that the true intercept and slope does not equal 0. 
+```{r}
+summary(SLR_new)
+
+confint(SLR_new, level = 0.95)
+
+```
+1h. I have first created a function using the summary from the new SLR model with the outliers fitered. This summary gives me the intercept value and the value of the slope. We want to observe the expected log price of a house with 1500 sqft living room. 1500 will be the value of our x and we will want to find y. Using the slope equation y=mx+b we see that y is equal to 12.8. This means that for an area of 1500 sqft, the log price is 12.8. Next, I calculated the prediction limits for 95% interval. For log price equal to 12.80 the limits for 95% is between 12.06156 to 13.54070. Our calculated log price falls in the interval, therefore with 95% confidence our estimate falls between these two values.
+```{r}
+calculate_y <- function(x,m,b) {
+  y <- (m*x)+b
+  return(y)
+}
+
+x<-1500
+m<-4.059e-04
+b<-1.220e+01
+calculate_y(x,m,b)
+
+
+prediction_interval <- predict(SLR_new, data = 1500, interval = "prediction", level = 0.95)
+
+```
+2a. From the scatterplots we see there is some positive linear relationship between education and prestige and income and prestige. I also calculated the correlation coefficients, we can see there is a strong correlation between education and prestige and income and prestige. Education and prestige does have a slightly stronger correlation of 0.85 while income and prestige has a correlation of 0.83. 
+```{r}
+library(carData)
+library(ggplot2)
+Duncan<-Duncan
+# Scatterplot for Education vs. Prestige
+ggplot(Duncan, aes(x = education, y = prestige)) +
+  geom_point() 
+
+# Scatterplot for Income vs. Prestige
+ggplot(Duncan, aes(x = income, y = prestige)) +
+  geom_point()
+cor(Duncan$education, Duncan$prestige)
+cor(Duncan$income, Duncan$prestige)
+```
+2b. When we compare the levels of type to prestige, prof(professional & managerial) has the greatest prestige compared to bc(blue collar) and wc(white collar). Comparing income to type, prof does have the greatest income. However wc is relatively close to the income of the prof. The type blue collar makes the least income compared to prof and white collar.
+```{r}
+boxplot(prestige ~ as.factor(type), data = Duncan,  
+        ylab="prestige", border = "blue", col="lightblue")
+boxplot(income ~ as.factor(type), data = Duncan, border = "blue", col="lightblue")
+```
+2c. 
+2d. From the summary of the model we see the coefficients for each of the variables. Type wc has a negative slope meaning prestige and type wc have a negative relationship. Type prof has the largest slope meaning its regression line with prestige is the steepest. The intercept states that while the other factors are equal to 0, prestige will have a value of -0.18. This means that as you add these different factors of education, income, and type of occupation you will increase the prestige and individual has. 
+```{r}
+MLM <- lm(prestige ~ education + income + type, data = Duncan)
+summary(MLM)
+```
+2e. From the residual plot we can assume constant variance. Aside from a few outlier points, there is symmetry around the 0 on the y axis. Additionally, the points are scatter around the 0 in no specific pattern, there is an equal spread of points above and below the line.  The assumption that the residuals have constant variance at every predictor level has been met by this residual plot. Since there is constant variance the estimates for the model's coefficients are reliable. Additionally, I tested for the normality of the residuals using a QQ plot. From the QQ plot we see that most of the points follow the 45 degree line. This indicates that the residuals are normally distributed, meaning the errors associated with the model and random and independent.  
+```{r}
+# Creating residual 
+resi <- residuals(MLM)
+plot(fitted(MLM), resi,
+     )
+abline(h = 0, col = "blue")
+
+# checking if residuals meet normality
+qqnorm(resi)
+qqline(resi)
+
+```
+2f. From the new model we can observe the effects of the predictors education and income on prestige. The slope for both variables, education and prestige, are positive and close together in range. This means that the regression line will be more acurrate because the points will fit the regression line more closely since the points will be close together. Interestingly, the intercept for this model is still negative meaning the factors of education and income increase prestige. 
+```{r}
+MLM_2 <- lm(prestige ~ education + income, data = Duncan)
+summary(MLM_2)
+
+```
+2g. From the partial residual plot we see there is a linear relationship between education and income with prestige. This partial residual plot allows us to see how these factors interact with prestige while the other each independent variable is also in the model. This is separate from a regular scatter plot because you will get to observe the independent variables as they interact with each other in the model. From the residual plot we see that there is a linear relationship between income and prestige and education and prestige. Income and prestige does have a steeper slope than education and prestige. This plot differs from your standard residual plot as we observe a linear relationship between the independent and dependent variables. A standard residual plot examines uniformity between the residuals and the fitted model. 
+```{r}
+library(car)
+avPlots(MLM_2)
+```
+2h. We can observe the effect size for the model using the R squared value from the summary. This value tells us the proportion of variance in prestige that can be explained by the predictors in the model. Here our r squared is 0.82, meaning that 82% of the variability in prestige can be explained by education and income. 
+```{r}
+summary(MLM_2)$r.squared
+```
+
